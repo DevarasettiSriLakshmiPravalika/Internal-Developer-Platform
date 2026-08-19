@@ -124,7 +124,7 @@ Kubernetes Cluster
 
 ## Database
 
-- PostgreSQL
+- MySQL
 
 ## DevOps
 
