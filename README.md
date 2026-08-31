@@ -48,7 +48,7 @@ An **Internal Developer Platform (IDP)** that automates the complete lifecycle o
      ---------------------------------------------------------
      |        |         |         |          |              |
      v        v         v         v          v              v
- GitHub   Templates  Docker   Kubernetes   Helm        PostgreSQL
+ GitHub   Templates  Docker   Kubernetes   Helm          MySQL
   API      Engine    Builder   Generator  Generator     Metadata
      |
      v
