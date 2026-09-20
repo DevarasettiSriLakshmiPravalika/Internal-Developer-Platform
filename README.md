@@ -1,90 +1,240 @@
-# ForgeFlow
+# 🚀 Internal Developer Platform (IDP)
 
-ForgeFlow is an Internal Developer Platform for provisioning and operating microservices through a React portal and Spring Boot API.
+> **Automated Microservice Provisioning & Kubernetes Deployment Platform**
 
-## Phase 1 status
+An **Internal Developer Platform (IDP)** that automates the complete lifecycle of creating and deploying microservices. Developers simply provide service details through a web portal, and the platform automatically provisions repositories, generates deployment artifacts, builds Docker images, performs security and quality checks, deploys applications to Kubernetes using GitOps, and configures monitoring and logging.
 
-Phase 1 establishes the runnable repository, frontend shell, backend health contract, and local development documentation. It does not claim authentication, persistence, provisioning, or external platform connectivity yet.
+---
 
-The portal deliberately shows truthful empty and unavailable states until the backend has real data or a configured integration.
+## 📌 Features
 
-## Structure
+- 🔐 JWT-based Authentication
+- 📂 Automatic GitHub Repository Creation
+- 📄 Project Template Generation
+- 🐳 Automatic Dockerfile Generation
+- ☸️ Kubernetes Manifest Generation
+- ⚓ Helm Chart Generation
+- 🔄 Automated CI/CD Pipeline Creation
+- ✅ Code Quality Analysis with SonarQube
+- 🛡️ Security Scanning with Trivy
+- 📦 Docker Image Build & Push
+- 🚀 GitOps Deployment using ArgoCD
+- 📊 Monitoring with Prometheus & Grafana
+- 📜 Centralized Logging with Fluent Bit & Loki
+- 📋 Audit Logging
+- 📈 Deployment Status & Metrics Dashboard
+
+---
+
+# 🏗️ Architecture
 
 ```text
-.
-├── backend/       Spring Boot REST API
-├── frontend/      React + TypeScript + Vite portal
-├── docs/          Architecture, API, deployment, and security notes
-├── .env.example   Configuration variable names only
+                +----------------------+
+                |      Developer       |
+                +----------+-----------+
+                           |
+                           v
+                +----------------------+
+                |   React Web Portal   |
+                +----------+-----------+
+                           |
+                      REST API
+                           |
+                           v
+                +----------------------+
+                | Spring Boot Backend  |
+                +----------+-----------+
+                           |
+     ---------------------------------------------------------
+     |        |         |         |          |              |
+     v        v         v         v          v              v
+ GitHub   Templates  Docker   Kubernetes   Helm          MySQL
+  API      Engine    Builder   Generator  Generator     Metadata
+     |
+     v
+ CI/CD Pipeline (Jenkins / GitHub Actions)
+     |
+     +----------------------------+
+     |                            |
+     v                            v
+SonarQube                    Trivy Scan
+(Code Quality)          (Security Scan)
+     |
+     v
+Docker Build
+     |
+     v
+Docker Image Scan
+     |
+     v
+Push Image to Docker Hub
+     |
+     v
+ArgoCD (GitOps)
+     |
+     v
+Kubernetes Cluster
+     |
+     +-------------------------------+
+     |                               |
+     v                               v
+ Prometheus                    Fluent Bit
+     |                               |
+     v                               v
+ Grafana                          Loki
+```
+
+---
+
+# ⚙️ Workflow
+
+1. Developer enters service details through the IDP portal.
+2. User authentication using JWT.
+3. Automatically creates a GitHub repository.
+4. Generates:
+   - Project Template
+   - Dockerfile
+   - Kubernetes Manifests
+   - Helm Charts
+   - CI/CD Pipeline
+5. Runs SonarQube code quality scan.
+6. Builds Docker image.
+7. Performs Trivy vulnerability scan on the Docker image.
+8. Pushes Docker image to Docker Hub.
+9. Deploys application using ArgoCD (GitOps).
+10. Configures monitoring and centralized logging.
+
+---
+
+# 🛠️ Tech Stack
+
+## Frontend
+
+- React.js
+- Tailwind CSS
+- Bootstrap
+- Axios
+
+## Backend
+
+
+
+- Spring Boot
+- Spring Security
+- JWT
+- REST APIs
+
+## Database
+
+- MySQL
+
+## DevOps
+
+- Docker
+- Kubernetes
+- Helm
+- Jenkins
+- GitHub Actions
+- GitHub API
+- Docker Hub
+- ArgoCD
+
+## DevSecOps
+
+- SonarQube
+- Trivy
+
+## Observability
+
+- Prometheus
+- Grafana
+- Fluent Bit
+- Loki
+
+---
+
+
+
+
+# 📂 Project Structure
+
+```text
+idp-platform/
+│
+├── frontend/
+│   ├── React
+│   ├── Tailwind CSS
+│   └── Axios
+│
+├── backend/
+│   ├── Spring Boot
+│   ├── Authentication
+│   ├── REST APIs
+│   ├── GitHub Integration
+│   ├── Template Engine
+│   └── Service Orchestration
+│
+├── templates/
+│   ├── Dockerfile
+│   ├── Kubernetes
+│   └── Helm
+│
+├── cicd/
+│   ├── Jenkinsfile
+│   └── GitHub Actions
+│
+├── monitoring/
+│   ├── Prometheus
+│   ├── Grafana
+│   ├── Fluent Bit
+│   └── Loki
+│
 └── README.md
 ```
 
-## Technology
+---
 
-- Frontend: React, TypeScript, Vite, Tailwind CSS, React Router, Axios, TanStack Query, Recharts, Lucide React
-- Backend: Java 21 baseline, Spring Boot, Spring MVC, Bean Validation, Actuator
-- Build: npm and Maven
+# 🔒 Security
 
-## Local development
 
-### Frontend
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+- JWT Authentication
+- Role-Based Authorization
+- SonarQube Code Quality Checks
+- Trivy Vulnerability Scanning
+- GitOps Deployment using ArgoCD
+- Audit Logging
 
-The portal is available at `http://localhost:5173`.
+---
 
-### Backend
 
-Install Maven and Java 21 or newer, then run:
 
-```powershell
-cd backend
-mvn spring-boot:run
-```
 
-The API listens on `http://localhost:8090` by default. Verify it with:
 
-```powershell
-curl http://localhost:8090/api/health
-```
+# 📈 Benefits
 
-Expected response:
+- ⚡ One-click microservice provisioning
+- 🚀 Faster deployments
+- 📦 Standardized project structure
+- ☸️ Automated Kubernetes deployment
+- 🔄 GitOps workflow
+- 📊 Built-in monitoring & logging
+- 🛡️ Integrated DevSecOps pipeline
+- ❌ Reduced manual errors
+- 👨‍💻 Higher developer productivity
 
-```json
-{"status":"UP","message":"ForgeFlow API is running"}
-```
+---
 
-## Validation
+# 🔮 Future Enhancements
 
-```powershell
-cd frontend
-npm run lint
-npm run build
-```
+- Multi-cloud deployment (AWS, Azure, GCP)
+- AI-assisted template generation
+- Canary Deployments
+- Blue-Green Deployments
+- Automatic Rollback
+- Service Mesh (Istio)
+- Multi-cluster Kubernetes
+- Open Policy Agent (OPA)
+- Cost Optimization Dashboard
 
-Backend tests can be run from `backend/` with `mvn test`.
-
-## Configuration and security
-
-Copy `.env.example` for local reference. Never commit real credentials. Authentication, database configuration, integrations, generated artifacts, CI/CD, Kubernetes, GitOps, and observability are intentionally scheduled for later phases.
-
-See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md), [docs/deployment.md](docs/deployment.md), and [docs/security.md](docs/security.md) for the current implementation boundary.
-
-## Roadmap
-
-1. Repository and application foundation
-2. Authentication and roles
-3. Dashboard data and service management
-4. GitHub integration
-5. Template generation
-6. Docker, Kubernetes, and Helm generation
-7. CI/CD
-8. SonarQube and Trivy
-9. ArgoCD GitOps
-10. Prometheus and Grafana
-11. Fluent Bit and Loki
-12. Audit logging and production hardening
+---
