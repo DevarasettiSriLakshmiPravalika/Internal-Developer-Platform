@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: forgeflow-api
+
+server:
+  port: ${SERVER_PORT:8090}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
