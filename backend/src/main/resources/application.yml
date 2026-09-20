@@ -5,6 +5,11 @@ spring:
 server:
   port: ${SERVER_PORT:8090}
 
+security:
+  jwt:
+    secret: ${JWT_SECRET:}
+    expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}
+
 management:
   endpoints:
     web:
