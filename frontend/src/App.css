@@ -173,6 +173,12 @@
   }
 }
 
+.user-button { width: 100%; text-align: left; cursor: pointer; }
+.panel-action { display: inline-flex; align-items: center; gap: 5px; border: 0; color: #65d6b4; background: transparent; font-size: 10px; cursor: pointer; }
+.inline-error { margin: 12px 0 0; padding: 8px 10px; border: 1px solid #6a3838; border-radius: 4px; color: #ff9999; background: #2a1719; font-size: 10px; }
+.loading-state { display: grid; place-items: center; min-height: 218px; color: #6f7a86; font-size: 11px; }
+.service-list { padding-top: 3px; }.service-row { display: flex; align-items: center; gap: 10px; min-height: 62px; border-bottom: 1px solid #27303a; }.service-row:last-child { border-bottom: 0; }.service-icon { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #2f4e4d; border-radius: 4px; color: #65d6b4; background: #132421; }.service-details { min-width: 0; }.service-details strong, .service-details small { display: block; }.service-details strong { color: #dce2e7; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; }.service-details small { margin-top: 4px; color: #6f7a86; font-size: 10px; }.service-status { display: flex; align-items: center; gap: 5px; margin-left: auto; color: #89939e; font-size: 9px; }.modal-backdrop { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 20px; background: #05070acc; }.modal { width: min(100%, 480px); border: 1px solid #34404b; background: #11161d; box-shadow: 0 24px 80px #05070add; }.modal-heading { display: flex; align-items: flex-start; justify-content: space-between; padding: 22px 24px 18px; border-bottom: 1px solid #27303a; }.modal-heading h2 { margin: 0; color: #f3f4f6; font-size: 17px; }.modal-close { border: 0; color: #89939e; background: transparent; font-size: 22px; cursor: pointer; }.service-form { display: grid; gap: 15px; padding: 22px 24px 24px; }.service-form label { display: grid; gap: 7px; color: #c6ccd3; font-size: 11px; }.service-form input, .service-form textarea, .service-form select { width: 100%; border: 1px solid #34404b; border-radius: 4px; outline: none; padding: 9px 10px; color: #f3f4f6; background: #0b0f14; font-size: 12px; }.service-form textarea { min-height: 72px; resize: vertical; }.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 5px; }
+
 .ticks {
   position: relative;
   width: 100%;

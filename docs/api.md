@@ -17,8 +17,17 @@ Returns the API process state:
 
 ### Authentication
 
-- `POST /api/auth/register` creates a developer account and returns a bearer token.
-- `POST /api/auth/login` authenticates an account and returns a bearer token.
-- `GET /api/auth/me` returns the current user and requires `Authorization: Bearer <token>`.
 
 Registration and login accept JSON. Passwords must be at least 12 characters. New accounts receive the `DEVELOPER` role.
+
+### Templates
+
+- `GET /api/services/{id}/template` generates deterministic starter files for the owned service.
+
+Supported languages are `spring-boot`, `node`, and `python`. Generation returns file paths and contents; it does not write to disk or claim that a repository was created.
+
+### Health
+
+`GET /api/health`
+
+
