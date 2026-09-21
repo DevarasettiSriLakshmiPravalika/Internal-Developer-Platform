@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Activity, Bell, Box, ChevronDown, CircleHelp, GitBranch, LayoutDashboard, LockKeyhole, Search, Server, Settings, ShieldCheck, TerminalSquare } from 'lucide-react'
 import './App.css'
+import { LoginPage } from './pages/LoginPage'
+import type { AuthResponse } from './types/auth'
 
 const navigation = [
   { label: 'Overview', icon: LayoutDashboard, active: true },
@@ -15,6 +17,20 @@ const navigation = [
 ]
 
 function App() {
+  const [authResponse, setAuthResponse] = useState<AuthResponse | null>(() => {
+    const accessToken = window.localStorage.getItem('forgeflow.accessToken')
+    return accessToken ? { accessToken, tokenType: 'Bearer', expiresInSeconds: 3600 } : null
+  })
+
+  function handleAuthenticated(response: AuthResponse) {
+    window.localStorage.setItem('forgeflow.accessToken', response.accessToken)
+    setAuthResponse(response)
+  }
+
+  if (!authResponse) {
+    return <LoginPage onAuthenticated={handleAuthenticated} />
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
