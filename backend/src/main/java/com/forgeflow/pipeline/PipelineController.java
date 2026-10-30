@@ -4,11 +4,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/pipelines")
+@Transactional(readOnly = true)
 public class PipelineController {
 
     private final PipelineRunRepository pipelineRunRepository;
@@ -36,6 +38,7 @@ public class PipelineController {
     }
 
     @PatchMapping("/{id}")
+    @Transactional
     public PipelineDto update(@PathVariable Long id, @RequestBody UpdatePipelineRequest request) {
         PipelineRun run = pipelineRunRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pipeline run not found"));

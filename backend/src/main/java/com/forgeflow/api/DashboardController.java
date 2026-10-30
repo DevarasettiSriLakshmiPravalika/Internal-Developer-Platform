@@ -5,6 +5,7 @@ import com.forgeflow.pipeline.PipelineRun;
 import com.forgeflow.pipeline.PipelineRunRepository;
 import com.forgeflow.service.ServiceEntity;
 import com.forgeflow.service.ServiceRepository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,6 +17,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/dashboard")
+@Transactional(readOnly = true)
 public class DashboardController {
 
     private final ServiceRepository serviceRepository;

@@ -138,8 +138,8 @@ export function CreateServicePage() {
   function validateStep1() {
     const e: Record<string, string> = {}
     if (!name.trim()) e.name = 'Name is required'
-    else if (!/^[a-z0-9-]+$/.test(name.trim()))
-      e.name = 'Only lowercase letters, numbers and hyphens'
+    else if (!/^[a-z][a-z0-9-]*$/.test(name.trim()))
+      e.name = 'Must start with a lowercase letter (a-z) and contain only lowercase letters, numbers and hyphens'
     if (!framework.trim()) e.framework = 'Framework is required'
     return e
   }
@@ -153,7 +153,7 @@ export function CreateServicePage() {
   }
 
   function nextStep() {
-    const errs = step === 0 ? validateStep1() : {}
+    const errs = step === 0 ? validateStep1() : step === 1 ? validateStep2() : {}
     if (Object.keys(errs).length) {
       setErrors(errs)
       return
