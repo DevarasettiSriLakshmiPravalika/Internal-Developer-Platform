@@ -1,72 +1,252 @@
-import type { ReactNode } from 'react'
-import { Activity, Bell, Box, ChevronDown, CircleHelp, GitBranch, LayoutDashboard, LockKeyhole, Search, Server, Settings, ShieldCheck, TerminalSquare } from 'lucide-react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { BrowserRouter, Routes, Route, NavLink, Outlet, Navigate, useNavigate } from 'react-router-dom'
+import {
+  Activity,
+  Bell,
+  Box,
+  ChevronDown,
+  CircleHelp,
+  FolderGit2,
+  LayoutDashboard,
+  LockKeyhole,
+  LogOut,
+  Search,
+  Server,
+  Settings,
+  ShieldCheck,
+  TerminalSquare,
+} from 'lucide-react'
+import { useState } from 'react'
 import './App.css'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import { LoginPage } from './pages/LoginPage'
+import { OverviewPage } from './pages/OverviewPage'
+import { ServicesPage } from './pages/ServicesPage'
+import { CreateServicePage } from './pages/CreateServicePage'
+import { ServiceDetailPage } from './pages/ServiceDetailPage'
+import { DeploymentsPage } from './pages/DeploymentsPage'
+import { PipelinesPage } from './pages/PipelinesPage'
+import { RepositoriesPage } from './pages/RepositoriesPage'
+import { ObservabilityPage } from './pages/ObservabilityPage'
+import { SecurityPage } from './pages/SecurityPage'
+import { AuditLogsPage } from './pages/AuditLogsPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { LoadingSpinner } from './components/LoadingSpinner'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5000,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
 const navigation = [
-  { label: 'Overview', icon: LayoutDashboard, active: true },
-  { label: 'Services', icon: Box },
-  { label: 'Deployments', icon: Server },
-  { label: 'Repositories', icon: GitBranch },
-  { label: 'Pipelines', icon: Activity },
-  { label: 'Infrastructure', icon: TerminalSquare },
-  { label: 'Observability', icon: Activity },
-  { label: 'Security', icon: ShieldCheck },
-  { label: 'Audit Logs', icon: LockKeyhole },
+  { label: 'Overview', to: '/', icon: LayoutDashboard },
+  { label: 'Services', to: '/services', icon: Box },
+  { label: 'Deployments', to: '/deployments', icon: Server },
+  { label: 'Repositories', to: '/repositories', icon: FolderGit2 },
+  { label: 'Pipelines', to: '/pipelines', icon: Activity },
+  { label: 'Observability', to: '/observability', icon: TerminalSquare },
+  { label: 'Security', to: '/security', icon: ShieldCheck },
+  { label: 'Audit Logs', to: '/audit-logs', icon: LockKeyhole },
 ]
 
-function App() {
+function ProtectedLayout() {
+  const { user, token, isLoading, logout } = useAuth()
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const navigate = useNavigate()
+
+  if (isLoading) {
+    return (
+      <div style={{ height: '100vh', display: 'grid', placeItems: 'center', background: '#0b0f14' }}>
+        <LoadingSpinner label="Authenticating session..." />
+      </div>
+    )
+  }
+
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+
+  const initials = user?.displayName
+    ? user.displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'ID'
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><span className="brand-mark">F</span><span>ForgeFlow</span></div>
-        <div className="workspace-selector"><span className="workspace-dot" /> Platform team <ChevronDown size={14} /></div>
+        <div className="brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+          <span className="brand-mark">F</span>
+          <span>ForgeFlow</span>
+        </div>
+
+        <div className="workspace-selector">
+          <span className="workspace-dot" />
+          <span>Platform Engineering</span>
+          <ChevronDown size={14} />
+        </div>
+
         <nav className="nav-list" aria-label="Main navigation">
-          {navigation.map(({ label, icon: Icon, active }) => (
-            <a className={active ? 'nav-item active' : 'nav-item'} href={`#${label.toLowerCase().replace(' ', '-')}`} key={label}>
-              <Icon size={16} /> {label}
-            </a>
+          {navigation.map(({ label, to, icon: Icon }) => (
+            <NavLink
+              to={to}
+              key={label}
+              end={to === '/'}
+              className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
+            >
+              <Icon size={16} />
+              <span>{label}</span>
+            </NavLink>
           ))}
         </nav>
+
         <div className="sidebar-footer">
-          <a className="nav-item" href="#settings"><Settings size={16} /> Settings</a>
-          <div className="user-chip"><span className="avatar">JD</span><span><strong>Jordan Davis</strong><small>Developer</small></span><ChevronDown size={14} /></div>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
+          >
+            <Settings size={16} />
+            <span>Settings</span>
+          </NavLink>
+
+          <div
+            className="user-chip"
+            style={{ position: 'relative', cursor: 'pointer' }}
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+          >
+            <span className="avatar">{initials}</span>
+            <span style={{ overflow: 'hidden' }}>
+              <strong style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user?.displayName || 'Developer'}
+              </strong>
+              <small>{user?.role || 'DEVELOPER'}</small>
+            </span>
+            <ChevronDown size={14} />
+
+            {userMenuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: 0,
+                  right: 0,
+                  marginBottom: 8,
+                  background: '#151c24',
+                  border: '1px solid #27303a',
+                  borderRadius: 4,
+                  padding: 6,
+                  zIndex: 100,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                }}
+              >
+                <div style={{ padding: '6px 10px', fontSize: 11, color: '#89939e', borderBottom: '1px solid #27303a' }}>
+                  {user?.email}
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    logout()
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '8px 10px',
+                    background: 'none',
+                    border: 'none',
+                    color: '#f87171',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    borderRadius: 3,
+                    textAlign: 'left',
+                  }}
+                >
+                  <LogOut size={13} /> Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 
       <main className="main-content">
         <header className="topbar">
-          <div className="breadcrumbs"><span>Workspace</span><span>/</span><strong>Overview</strong></div>
-          <div className="topbar-actions"><div className="search"><Search size={15} /><span>Search</span><kbd>/</kbd></div><button className="icon-button" aria-label="Help"><CircleHelp size={17} /></button><button className="icon-button notification" aria-label="Notifications"><Bell size={17} /><span /></button></div>
+          <div className="breadcrumbs">
+            <span>Workspace</span>
+            <span>/</span>
+            <strong>IDP Core</strong>
+          </div>
+          <div className="topbar-actions">
+            <div className="search">
+              <Search size={15} />
+              <span>Search platform</span>
+              <kbd>/</kbd>
+            </div>
+            <button className="icon-button" aria-label="Help">
+              <CircleHelp size={17} />
+            </button>
+            <button className="icon-button notification" aria-label="Notifications">
+              <Bell size={17} />
+              <span />
+            </button>
+          </div>
         </header>
 
-        <div className="content-wrap">
-          <section className="page-heading"><div><p className="eyebrow">PLATFORM OVERVIEW</p><h1>Good morning, Jordan</h1><p className="subtitle">A clear view of your services, deployments, and platform health.</p></div><button className="primary-button"><Box size={16} /> Create service</button></section>
-          <section className="metric-grid" aria-label="Platform metrics">
-            <Metric label="Services" value="0" detail="No services registered" />
-            <Metric label="Active deployments" value="0" detail="No deployments yet" />
-            <Metric label="Pipeline health" value="--" detail="No pipeline runs" />
-            <Metric label="Security posture" value="--" detail="No scans available" />
-          </section>
-          <section className="overview-grid">
-            <div className="panel service-panel"><div className="panel-heading"><div><h2>Services</h2><p>Your registered microservices appear here.</p></div><a href="#services">View all</a></div><EmptyState icon={<Box size={20} />} title="No services yet" detail="Create a service to begin provisioning your first workload." action="Create service" /></div>
-            <div className="panel status-panel"><div className="panel-heading"><div><h2>Platform connections</h2><p>Configured integrations and their availability.</p></div><a href="#settings">Manage</a></div><Connection name="GitHub" status="Not connected" tone="neutral" /><Connection name="Kubernetes" status="Unavailable" tone="warning" /><Connection name="Metrics" status="Unavailable" tone="warning" /></div>
-          </section>
-        </div>
+        <Outlet />
       </main>
     </div>
   )
 }
 
-function Metric({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return <article className="metric"><span className="metric-label">{label}</span><strong>{value}</strong><small>{detail}</small></article>
+function RootApp() {
+  const { token, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div style={{ height: '100vh', display: 'grid', placeItems: 'center', background: '#0b0f14' }}>
+        <LoadingSpinner label="Initializing..." />
+      </div>
+    )
+  }
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={token ? <Navigate to="/" replace /> : <LoginPage />}
+      />
+
+      <Route element={<ProtectedLayout />}>
+        <Route index element={<OverviewPage />} />
+        <Route path="services" element={<ServicesPage />} />
+        <Route path="services/new" element={<CreateServicePage />} />
+        <Route path="services/:id" element={<ServiceDetailPage />} />
+        <Route path="deployments" element={<DeploymentsPage />} />
+        <Route path="repositories" element={<RepositoriesPage />} />
+        <Route path="pipelines" element={<PipelinesPage />} />
+        <Route path="observability" element={<ObservabilityPage />} />
+        <Route path="security" element={<SecurityPage />} />
+        <Route path="audit-logs" element={<AuditLogsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
 }
 
-function EmptyState({ icon, title, detail, action }: { icon: ReactNode; title: string; detail: string; action: string }) {
-  return <div className="empty-state"><span className="empty-icon">{icon}</span><h3>{title}</h3><p>{detail}</p><button className="secondary-button">{action}</button></div>
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <RootApp />
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
+  )
 }
-
-function Connection({ name, status, tone }: { name: string; status: string; tone: 'neutral' | 'warning' }) {
-  return <div className="connection"><span className={`status-dot ${tone}`} /><span className="connection-name">{name}</span><span className={`status-label ${tone}`}>{status}</span></div>
-}
-
-export default App

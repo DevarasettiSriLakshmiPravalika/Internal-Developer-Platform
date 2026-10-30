@@ -1,18 +1,27 @@
 # ForgeFlow API
 
-## Phase 1 endpoints
+## Available endpoints
 
 ### Health
 
 `GET /api/health`
 
-Returns the API process state:
+Returns the API process and database state:
 
 ```json
 {
   "status": "UP",
+  "database": "UP",
   "message": "ForgeFlow API is running"
 }
 ```
 
-Authentication and domain endpoints will be added in their respective phases.
+`database` is `UNAVAILABLE` when the configured MySQL database cannot be reached. The endpoint does not report database health based on configuration alone.
+
+### Authentication
+
+- `POST /api/auth/register` creates a developer account and returns a bearer token.
+- `POST /api/auth/login` authenticates an account and returns a bearer token.
+- `GET /api/auth/me` returns the current user and requires `Authorization: Bearer <token>`.
+
+Registration and login accept JSON. Passwords must be at least 12 characters. New accounts receive the `DEVELOPER` role.
