@@ -21,6 +21,6 @@ class HealthControllerTest {
     void returnsApiHealth() throws Exception {
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("{\"status\":\"UP\",\"message\":\"ForgeFlow API is running\"}"));
+            .andExpect(content().json("{\"status\":\"UP\",\"database\":\"UP\",\"message\":\"ForgeFlow API is running\"}"));
     }
 }

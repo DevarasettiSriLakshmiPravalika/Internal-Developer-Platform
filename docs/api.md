@@ -6,14 +6,17 @@
 
 `GET /api/health`
 
-Returns the API process state:
+Returns the API process and database state:
 
 ```json
 {
   "status": "UP",
+  "database": "UP",
   "message": "ForgeFlow API is running"
 }
 ```
+
+`database` is `UNAVAILABLE` when the configured MySQL database cannot be reached. The endpoint does not report database health based on configuration alone.
 
 ### Authentication
 

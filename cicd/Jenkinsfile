@@ -1,0 +1,151 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'SERVICE_NAME', defaultValue: 'my-service', description: 'Name of the microservice')
+        string(name: 'IMAGE_TAG', defaultValue: "${BUILD_NUMBER}", description: 'Docker image tag')
+        choice(name: 'ENVIRONMENT', choices: ['production', 'staging', 'development'], description: 'Target environment')
+    }
+
+    environment {
+        DOCKER_IMAGE     = "${DOCKERHUB_USERNAME}/${params.SERVICE_NAME}"
+        SONARQUBE_SERVER = 'SonarQube'
+        DOCKERHUB_CREDS  = credentials('dockerhub-credentials')
+        GITHUB_CREDS     = credentials('github-credentials')
+        ARGOCD_URL       = credentials('argocd-url')
+        ARGOCD_TOKEN     = credentials('argocd-token')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.GIT_COMMIT_SHORT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                }
+            }
+        }
+
+        stage('Code Quality — SonarQube') {
+            steps {
+                withSonarQubeEnv("${SONARQUBE_SERVER}") {
+                    sh """
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=${params.SERVICE_NAME} \
+                          -Dsonar.projectName='${params.SERVICE_NAME}' \
+                          -Dsonar.sources=src/main \
+                          -Dsonar.tests=src/test
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build Application') {
+            steps {
+                sh 'mvn package -DskipTests'
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh """
+                    docker build \
+                      -t ${DOCKER_IMAGE}:${params.IMAGE_TAG} \
+                      -t ${DOCKER_IMAGE}:latest \
+                      --build-arg BUILD_VERSION=${params.IMAGE_TAG} \
+                      .
+                """
+            }
+        }
+
+        stage('Security Scan — Trivy') {
+            steps {
+                sh """
+                    trivy image \
+                      --exit-code 1 \
+                      --severity CRITICAL,HIGH \
+                      --format json \
+                      --output trivy-report.json \
+                      ${DOCKER_IMAGE}:${params.IMAGE_TAG}
+                """
+                archiveArtifacts artifacts: 'trivy-report.json', fingerprint: true
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                sh """
+                    echo ${DOCKERHUB_CREDS_PSW} | docker login -u ${DOCKERHUB_CREDS_USR} --password-stdin
+                    docker push ${DOCKER_IMAGE}:${params.IMAGE_TAG}
+                    docker push ${DOCKER_IMAGE}:latest
+                """
+            }
+        }
+
+        stage('GitOps — Update Helm Values') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh """
+                    git config user.email "jenkins@forgeflow.io"
+                    git config user.name "ForgeFlow Jenkins"
+                    sed -i 's|tag: .*|tag: "${params.IMAGE_TAG}"|' helm/${params.SERVICE_NAME}/values.yaml
+                    git add helm/${params.SERVICE_NAME}/values.yaml
+                    git commit -m "chore(deploy): update ${params.SERVICE_NAME} image to ${params.IMAGE_TAG} [skip ci]"
+                    git push origin main
+                """
+            }
+        }
+
+        stage('ArgoCD Sync') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh """
+                    argocd app sync ${params.SERVICE_NAME} \
+                      --server ${ARGOCD_URL} \
+                      --auth-token ${ARGOCD_TOKEN} \
+                      --insecure
+                    argocd app wait ${params.SERVICE_NAME} \
+                      --server ${ARGOCD_URL} \
+                      --auth-token ${ARGOCD_TOKEN} \
+                      --health --timeout 300
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo "✅ Pipeline succeeded for ${params.SERVICE_NAME} (${params.IMAGE_TAG})"
+            // Notify ForgeFlow IDP about successful pipeline
+            sh """
+                curl -s -X PATCH http://forgeflow-api:8090/api/pipelines/${BUILD_NUMBER} \
+                  -H 'Content-Type: application/json' \
+                  -d '{"status":"SUCCESS","stage":"COMPLETED","dockerImageTag":"${DOCKER_IMAGE}:${params.IMAGE_TAG}"}'
+            """
+        }
+        failure {
+            echo "❌ Pipeline FAILED for ${params.SERVICE_NAME}"
+            sh """
+                curl -s -X PATCH http://forgeflow-api:8090/api/pipelines/${BUILD_NUMBER} \
+                  -H 'Content-Type: application/json' \
+                  -d '{"status":"FAILED"}'
+            """
+        }
+    }
+}

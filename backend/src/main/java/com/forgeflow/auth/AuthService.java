@@ -1,46 +1,53 @@
 package com.forgeflow.auth;
 
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Transactional
 public class AuthService {
 
-    private final Map<String, UserAccount> users = new ConcurrentHashMap<>();
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public AuthService(PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+        this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
 
     public AuthDtos.AuthResponse register(AuthDtos.RegisterRequest request) {
         String email = normalizeEmail(request.email());
-        UserAccount account = new UserAccount(email, request.displayName().trim(),
-                passwordEncoder.encode(request.password()), Role.DEVELOPER);
-        if (users.putIfAbsent(email, account) != null) {
+        if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
         }
-        return issueToken(account);
+        UserEntity entity = new UserEntity(email, request.displayName().trim(),
+                passwordEncoder.encode(request.password()), Role.DEVELOPER);
+        userRepository.save(entity);
+        return issueToken(entity.toRecord());
     }
 
     public AuthDtos.AuthResponse login(AuthDtos.LoginRequest request) {
-        UserAccount account = users.get(normalizeEmail(request.email()));
-        if (account == null || !passwordEncoder.matches(request.password(), account.passwordHash())) {
+        String email = normalizeEmail(request.email());
+        UserEntity entity = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
+        if (!passwordEncoder.matches(request.password(), entity.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
-        return issueToken(account);
+        return issueToken(entity.toRecord());
     }
 
+    @Transactional(readOnly = true)
     public UserAccount findByEmail(String email) {
-        return users.get(normalizeEmail(email));
+        return userRepository.findByEmail(normalizeEmail(email))
+                .map(UserEntity::toRecord)
+                .orElse(null);
     }
 
     private AuthDtos.AuthResponse issueToken(UserAccount account) {

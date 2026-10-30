@@ -2,11 +2,11 @@ package com.forgeflow;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableAsync;
 
-@SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
+@SpringBootApplication
+@EnableAsync
 public class ForgeFlowApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(ForgeFlowApplication.class, args);
     }

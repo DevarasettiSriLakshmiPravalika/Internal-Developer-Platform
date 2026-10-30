@@ -1,6 +1,21 @@
 spring:
   application:
     name: forgeflow-api
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:forgeflow}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:forgeflow}
+    password: ${DB_PASSWORD:forgeflow}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
 server:
   port: ${SERVER_PORT:8090}
@@ -14,8 +29,27 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       probes:
         enabled: true
+    prometheus:
+      enabled: true
+
+integrations:
+  github:
+    token: ${GITHUB_TOKEN:}
+    org: ${GITHUB_ORG:}
+  dockerhub:
+    username: ${DOCKERHUB_USERNAME:forgeflow}
+  argocd:
+    url: ${ARGOCD_URL:}
+  sonarqube:
+    url: ${SONARQUBE_URL:http://localhost:9000}
+    token: ${SONARQUBE_TOKEN:}
+
+async:
+  core-pool-size: 4
+  max-pool-size: 16
+  queue-capacity: 100

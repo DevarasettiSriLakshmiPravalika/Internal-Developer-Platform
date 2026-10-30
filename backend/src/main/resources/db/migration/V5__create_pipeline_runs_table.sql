@@ -1,0 +1,20 @@
+CREATE TABLE pipeline_runs (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    service_id BIGINT NOT NULL,
+    deployment_id BIGINT,
+    run_number VARCHAR(50),
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    stage VARCHAR(50),
+    sonarqube_status VARCHAR(30),
+    sonarqube_url VARCHAR(500),
+    trivy_status VARCHAR(30),
+    trivy_critical_count INT DEFAULT 0,
+    trivy_high_count INT DEFAULT 0,
+    docker_image_tag VARCHAR(200),
+    logs_url VARCHAR(500),
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_pipeline_runs_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE CASCADE
+);

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { ArrowRight, LockKeyhole } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { login, register } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 import type { AuthResponse } from '../types/auth'
 
 type LoginPageProps = {
-  onAuthenticated: (response: AuthResponse) => void
+  onAuthenticated?: (response: AuthResponse) => void
 }
 
 export function LoginPage({ onAuthenticated }: LoginPageProps) {
@@ -15,6 +17,8 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const auth = useAuth()
+  const navigate = useNavigate()
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -24,7 +28,12 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
       const response = isRegistering
         ? await register(email, displayName, password)
         : await login(email, password)
-      onAuthenticated(response)
+      
+      await auth.login(response.accessToken)
+      if (onAuthenticated) {
+        onAuthenticated(response)
+      }
+      navigate('/')
     } catch (requestError) {
       if (requestError && typeof requestError === 'object' && 'response' in requestError) {
         const message = (requestError as { response?: { data?: { message?: string } } }).response?.data?.message
@@ -41,15 +50,62 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
     <main className="auth-screen">
       <section className="auth-panel">
         <div className="brand auth-brand"><span className="brand-mark">F</span><span>ForgeFlow</span></div>
-        <div className="auth-intro"><p className="eyebrow">INTERNAL DEVELOPER PLATFORM</p><h1>{isRegistering ? 'Create your workspace account' : 'Welcome back'}</h1><p>{isRegistering ? 'Start building and operating services with your team.' : 'Sign in to manage services, deployments, and platform access.'}</p></div>
+        <div className="auth-intro">
+          <p className="eyebrow">INTERNAL DEVELOPER PLATFORM</p>
+          <h1>{isRegistering ? 'Create your workspace account' : 'Welcome back'}</h1>
+          <p>{isRegistering ? 'Start building and operating services with your team.' : 'Sign in to manage services, deployments, and platform access.'}</p>
+        </div>
         <form onSubmit={submit} className="auth-form">
-          {isRegistering && <label>Display name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required minLength={2} maxLength={80} autoComplete="name" /></label>}
-          <label>Work email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
-          <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={12} autoComplete={isRegistering ? 'new-password' : 'current-password'} /><small>{isRegistering ? 'Use at least 12 characters.' : 'Your password is never shown in the platform.'}</small></label>
+          {isRegistering && (
+            <label>
+              Display name
+              <input
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                required
+                minLength={2}
+                maxLength={80}
+                autoComplete="name"
+              />
+            </label>
+          )}
+          <label>
+            Work email
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              autoComplete="email"
+            />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              minLength={6}
+              autoComplete={isRegistering ? 'new-password' : 'current-password'}
+            />
+            <small>{isRegistering ? 'Use at least 6 characters.' : 'Your password is never shown in the platform.'}</small>
+          </label>
           {error && <p className="auth-error" role="alert">{error}</p>}
-          <button className="primary-button auth-submit" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Working...' : isRegistering ? 'Create account' : 'Sign in'} <ArrowRight size={16} /></button>
+          <button className="primary-button auth-submit" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Working...' : isRegistering ? 'Create account' : 'Sign in'} <ArrowRight size={16} />
+          </button>
         </form>
-        <button className="auth-switch" type="button" onClick={() => { setIsRegistering(!isRegistering); setError('') }}>{isRegistering ? 'Already have an account? Sign in' : 'Need an account? Create one'}</button>
+        <button
+          className="auth-switch"
+          type="button"
+          onClick={() => {
+            setIsRegistering(!isRegistering)
+            setError('')
+          }}
+        >
+          {isRegistering ? 'Already have an account? Sign in' : 'Need an account? Create one'}
+        </button>
         <p className="auth-note"><LockKeyhole size={13} /> Access is secured with signed JWT sessions.</p>
       </section>
     </main>

@@ -1,0 +1,181 @@
+services:
+  # ─── Database ───────────────────────────────────────────────
+  mysql:
+    image: mysql:8.4
+    container_name: forgeflow-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-forgeflow}
+      MYSQL_USER: ${DB_USERNAME:-forgeflow}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-forgeflow}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-change-me-locally}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - forgeflow-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$${MYSQL_USER} -p$${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - forgeflow-network
+
+  # ─── Backend ────────────────────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: forgeflow-api
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8090
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-forgeflow}
+      DB_USERNAME: ${DB_USERNAME:-forgeflow}
+      DB_PASSWORD: ${DB_PASSWORD:-forgeflow}
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-random-secret-at-least-32-chars}
+      JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-3600}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_ORG: ${GITHUB_ORG:-}
+      DOCKERHUB_USERNAME: ${DOCKERHUB_USERNAME:-forgeflow}
+      ARGOCD_URL: ${ARGOCD_URL:-}
+      SONARQUBE_URL: ${SONARQUBE_URL:-http://sonarqube:9000}
+      SONARQUBE_TOKEN: ${SONARQUBE_TOKEN:-}
+    ports:
+      - "8090:8090"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - forgeflow-network
+
+  # ─── Frontend ───────────────────────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: forgeflow-ui
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - forgeflow-network
+
+  # ─── SonarQube ──────────────────────────────────────────────
+  sonarqube:
+    image: sonarqube:10-community
+    container_name: forgeflow-sonarqube
+    restart: unless-stopped
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-logs:/opt/sonarqube/logs
+      - sonarqube-extensions:/opt/sonarqube/extensions
+    depends_on:
+      - sonarqube-db
+    networks:
+      - forgeflow-network
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  sonarqube-db:
+    image: postgres:16-alpine
+    container_name: forgeflow-sonarqube-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    volumes:
+      - sonarqube-postgres-data:/var/lib/postgresql/data
+    networks:
+      - forgeflow-network
+
+  # ─── Prometheus ─────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: forgeflow-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts:/etc/prometheus/alerts:ro
+      - prometheus-data:/prometheus
+    networks:
+      - forgeflow-network
+
+  # ─── Grafana ────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.2.2
+    container_name: forgeflow-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-forgeflow}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - forgeflow-network
+
+  # ─── Loki ───────────────────────────────────────────────────
+  loki:
+    image: grafana/loki:3.2.0
+    container_name: forgeflow-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki.yml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/tmp/loki
+    networks:
+      - forgeflow-network
+
+  # ─── Fluent Bit ─────────────────────────────────────────────
+  fluent-bit:
+    image: fluent/fluent-bit:3.2
+    container_name: forgeflow-fluent-bit
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - /var/log:/var/log:ro
+    depends_on:
+      - loki
+    networks:
+      - forgeflow-network
+
+volumes:
+  forgeflow-mysql-data:
+  sonarqube-data:
+  sonarqube-logs:
+  sonarqube-extensions:
+  sonarqube-postgres-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+
+networks:
+  forgeflow-network:
+    driver: bridge

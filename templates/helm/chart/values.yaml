@@ -1,0 +1,59 @@
+# Default values for a ForgeFlow-generated service
+# These values are auto-populated by ForgeFlow IDP
+
+appName: my-service
+namespace: default
+
+replicaCount: 2
+
+image:
+  repository: forgeflow/my-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: my-service.forgeflow.io
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: my-service-tls
+      hosts:
+        - my-service.forgeflow.io
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Environment variables for the container
+env: {}
+
+# Prometheus monitoring
+monitoring:
+  enabled: true
+  scrapeInterval: 30s
